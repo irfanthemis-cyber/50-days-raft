@@ -1,5 +1,5 @@
 -- ======================================
--- 50 DAYS ON A RAFT - AUTO COLLECT FIXED
+-- 50 DAYS ON A RAFT - AUTO COLLECT FIXED + RETURN
 -- ======================================
 
 -- ===== BASIC =====
@@ -10,6 +10,7 @@ local hrp = char:WaitForChild("HumanoidRootPart")
 
 -- ===== STATE =====
 local AutoCollect = false
+local StartCFrame = nil   -- 🔑 POSISI AWAL
 
 -- ======================================
 -- GUI ROOT
@@ -77,14 +78,19 @@ end)
 autoBtn.MouseButton1Click:Connect(function()
     AutoCollect = not AutoCollect
     autoBtn.Text = AutoCollect and "Auto Collect : ON" or "Auto Collect : OFF"
+
+    if AutoCollect then
+        -- 🔑 SIMPAN POSISI AWAL SAAT ON
+        StartCFrame = hrp.CFrame
+    end
 end)
 
 -- ======================================
--- AUTO COLLECT (FIXED)
+-- AUTO COLLECT + BALIK KE AWAL
 -- ======================================
 task.spawn(function()
     while task.wait(0.6) do
-        if AutoCollect then
+        if AutoCollect and StartCFrame then
             for _,v in pairs(workspace:GetDescendants()) do
                 if v:IsA("ProximityPrompt") and v.Enabled then
                     local container = v.Parent
@@ -95,9 +101,16 @@ task.spawn(function()
 
                     if part then
                         pcall(function()
+                            -- teleport ke item
                             hrp.CFrame = part.CFrame + Vector3.new(0,2,0)
-                            task.wait(0.1)
+                            task.wait(0.12)
+
+                            -- ambil item
                             fireproximityprompt(v)
+                            task.wait(0.12)
+
+                            -- 🔑 BALIK KE POSISI AWAL
+                            hrp.CFrame = StartCFrame
                         end)
                     end
                 end
