@@ -1,5 +1,5 @@
 -- ======================================================
--- 50 DAYS ON A RAFT - AFK AUTO COLLECT (TELEPORT & RETURN)
+-- 50 DAYS ON A RAFT - AFK ITEM COLLECT & DROP TO PLAYER
 -- ======================================================
 
 -- =====================
@@ -11,11 +11,11 @@ local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 
 -- =====================
--- SETTINGS (BOLEH EDIT)
+-- SETTINGS (EDIT INI)
 -- =====================
-local SEARCH_RADIUS = 40      -- jarak max cari item (studs)
-local TELEPORT_DELAY = 0.15   -- jeda teleport
-local LOOP_DELAY = 1          -- kecepatan scan
+local SEARCH_RADIUS = 40
+local LOOP_DELAY = 0.35
+local TELEPORT_DELAY = 0.06
 
 -- =====================
 -- STATE
@@ -24,16 +24,13 @@ local AutoCollect = false
 local AFKPosition = nil
 
 -- =====================
--- GUI ROOT
+-- GUI
 -- =====================
 local gui = Instance.new("ScreenGui")
-gui.Name = "RaftAFKUI"
+gui.Name = "RaftAFKDropUI"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- =====================
--- TOGGLE BUTTON (LOGO)
--- =====================
 local toggleBtn = Instance.new("TextButton")
 toggleBtn.Size = UDim2.new(0, 55, 0, 55)
 toggleBtn.Position = UDim2.new(0, 10, 0.5, -27)
@@ -46,9 +43,6 @@ toggleBtn.Parent = gui
 toggleBtn.Active = true
 toggleBtn.Draggable = true
 
--- =====================
--- MENU FRAME
--- =====================
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 240, 0, 160)
 frame.Position = UDim2.new(0, 80, 0.5, -80)
@@ -58,7 +52,6 @@ frame.BorderSizePixel = 0
 frame.Parent = gui
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0,10)
 
--- TITLE
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,0,0,35)
 title.BackgroundTransparency = 1
@@ -68,7 +61,6 @@ title.Font = Enum.Font.GothamBold
 title.TextColor3 = Color3.fromRGB(255,255,255)
 title.Parent = frame
 
--- AUTO COLLECT BUTTON
 local autoBtn = Instance.new("TextButton")
 autoBtn.Size = UDim2.new(1,-20,0,45)
 autoBtn.Position = UDim2.new(0,10,0,55)
@@ -81,9 +73,6 @@ autoBtn.BorderSizePixel = 0
 autoBtn.Parent = frame
 Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0,8)
 
--- =====================
--- UI TOGGLES
--- =====================
 toggleBtn.MouseButton1Click:Connect(function()
     frame.Visible = not frame.Visible
 end)
@@ -91,8 +80,6 @@ end)
 autoBtn.MouseButton1Click:Connect(function()
     AutoCollect = not AutoCollect
     autoBtn.Text = AutoCollect and "Auto Collect : ON" or "Auto Collect : OFF"
-
-    -- simpan posisi AFK saat dinyalakan
     if AutoCollect then
         AFKPosition = hrp.CFrame
     end
@@ -101,21 +88,20 @@ end)
 -- =====================
 -- FIND NEAREST ITEM
 -- =====================
-local function getNearestPrompt()
-    local nearest = nil
-    local shortest = SEARCH_RADIUS
+local function getNearestItem()
+    local nearest, shortest = nil, SEARCH_RADIUS
 
     for _,prompt in pairs(workspace:GetDescendants()) do
         if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-            local container = prompt.Parent
+            local c = prompt.Parent
             local part =
-                (container:IsA("BasePart") and container)
-                or container:FindFirstChildWhichIsA("BasePart")
-                or (container.Parent and container.Parent:FindFirstChildWhichIsA("BasePart"))
+                (c:IsA("BasePart") and c)
+                or c:FindFirstChildWhichIsA("BasePart")
+                or (c.Parent and c.Parent:FindFirstChildWhichIsA("BasePart"))
 
             if part then
                 local dist = (part.Position - AFKPosition.Position).Magnitude
-                if dist <= shortest then
+                if dist < shortest then
                     shortest = dist
                     nearest = {prompt = prompt, part = part}
                 end
@@ -127,23 +113,28 @@ local function getNearestPrompt()
 end
 
 -- =====================
--- AUTO COLLECT LOOP
+-- AUTO COLLECT & DROP
 -- =====================
 task.spawn(function()
     while task.wait(LOOP_DELAY) do
         if AutoCollect and AFKPosition then
-            local target = getNearestPrompt()
+            local target = getNearestItem()
             if target then
                 pcall(function()
                     -- teleport ke item
                     hrp.CFrame = target.part.CFrame + Vector3.new(0,2,0)
                     task.wait(TELEPORT_DELAY)
 
-                    -- ambil item
+                    -- trigger pickup / detach
                     fireproximityprompt(target.prompt)
-                    task.wait(TELEPORT_DELAY)
+                    task.wait(0.05)
 
-                    -- balik ke posisi awal
+                    -- paksa item ke AFK spot
+                    if target.part and target.part.Parent then
+                        target.part.CFrame = AFKPosition + Vector3.new(0, 2, 0)
+                    end
+
+                    -- balik ke AFK spot
                     hrp.CFrame = AFKPosition
                 end)
             end
@@ -151,15 +142,12 @@ task.spawn(function()
     end
 end)
 
--- =====================
--- NOTIFICATION
--- =====================
 pcall(function()
     game.StarterGui:SetCore("SendNotification", {
         Title = "Loaded",
-        Text = "Tap ⚓ → Auto Collect AFK",
+        Text = "AFK Collect & Drop aktif",
         Duration = 5
     })
 end)
 
-print("✅ AFK Auto Collect loaded")
+print("✅ AFK Collect & Drop loaded")
