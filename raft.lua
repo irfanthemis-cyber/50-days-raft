@@ -54,3 +54,50 @@ pcall(function()
         Duration = 5
     })
 end)
+
+
+-- =========================
+-- UI BUTTON (NO IMAGE)
+-- =========================
+local AutoCollect = false
+
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 60, 0, 60)
+button.Position = UDim2.new(0, 10, 0.5, -30)
+button.Text = "⚙"
+button.TextSize = 28
+button.BackgroundColor3 = Color3.fromRGB(30,30,30)
+button.TextColor3 = Color3.fromRGB(255,255,255)
+button.Parent = gui
+button.Active = true
+button.Draggable = true
+
+button.MouseButton1Click:Connect(function()
+    AutoCollect = not AutoCollect
+    button.Text = AutoCollect and "ON" or "OFF"
+end)
+
+-- =========================
+-- AUTO COLLECT ALL ITEMS
+-- =========================
+task.spawn(function()
+    while task.wait(0.5) do
+        if AutoCollect then
+            for _,v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    local part = v.Parent
+                    if part and part:IsA("BasePart") then
+                        hrp.CFrame = part.CFrame + Vector3.new(0, 2, 0)
+                        task.wait(0.1)
+                        fireproximityprompt(v)
+                    end
+                end
+            end
+        end
+    end
+end)
+
