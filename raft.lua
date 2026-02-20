@@ -1,9 +1,14 @@
-local gui = Instance.new("ScreenGui")
-gui.Parent = game.Players.LocalPlayer.PlayerGui
+local plr = game.Players.LocalPlayer
+local hrp = plr.Character or plr.CharacterAdded:Wait()
+hrp = hrp:WaitForChild("HumanoidRootPart")
 
-local txt = Instance.new("TextLabel")
-txt.Size = UDim2.new(0,300,0,50)
-txt.Position = UDim2.new(0.5,-150,0.5,-25)
-txt.Text = "SCRIPT JALAN"
-txt.TextScaled = true
-txt.Parent = gui
+local startPos = hrp.CFrame
+
+-- pindah sekali
+hrp.CFrame = hrp.CFrame * CFrame.new(0,0,-10)
+wait(1)
+
+-- balik
+hrp.CFrame = startPos
+
+print("TEST SELESAI")
